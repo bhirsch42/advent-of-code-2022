@@ -83,7 +83,7 @@ fn apply_moves(stacks: &mut [Vec<char>], char_moves: &[CharMove]) {
 fn apply_moves_bulk(stacks: &mut [Vec<char>], char_moves: &[CharMove]) {
     char_moves.iter().for_each(|char_move| {
         let moved_chars: Vec<char> = {
-            let from_stack = { &mut stacks[char_move.from] };
+            let from_stack = &mut stacks[char_move.from];
             let new_len = from_stack.len() - char_move.count;
             from_stack.drain(new_len..).collect()
         };
