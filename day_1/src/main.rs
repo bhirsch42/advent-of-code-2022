@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::{fs::read_to_string, mem::swap, num::ParseIntError};
 
 const INPUT_FILEPATH: &str = "input.txt";
@@ -60,8 +61,24 @@ fn part_2() {
         max.iter().sum::<i32>()
     );
 }
+
+fn scratch() {
+    let total: i32 = load_input()
+        .split(|x| matches!(x, Err(_)))
+        .map(|arr| arr.iter().map(|x| x.to_owned().unwrap()).collect())
+        .map(|x: Vec<i32>| x.iter().sum::<i32>())
+        .sorted()
+        .rev()
+        .take(3)
+        .sum();
+
+    println!("Total: {}", total);
+}
+
 fn main() {
     part_1();
     println!("---");
     part_2();
+    println!("---");
+    scratch();
 }
