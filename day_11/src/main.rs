@@ -77,22 +77,21 @@ impl From<Captures<'_>> for Monkey {
     }
 }
 
-fn load_monkeys() {
+fn load_monkeys() -> Vec<Monkey> {
     let file = read_to_string("input.txt").unwrap();
     let regex_pattern = read_to_string("regex.txt").unwrap();
 
     let re = Regex::new(&regex_pattern).unwrap();
 
-    let result: Vec<Monkey> = re
+    let monkeys: Vec<Monkey> = re
         .captures_iter(&file)
         .map(|capture| {
-            println!("{capture:#?}");
             let monkey: Monkey = capture.try_into().unwrap();
             monkey
         })
         .collect();
 
-    println!("{result:#?}");
+    monkeys
 }
 
 fn part_1(monkeys: &[Monkey]) {
@@ -101,5 +100,5 @@ fn part_1(monkeys: &[Monkey]) {
 
 fn main() {
     let monkeys = load_monkeys();
-    // part_1(&monkeys);
+    part_1(&monkeys);
 }
