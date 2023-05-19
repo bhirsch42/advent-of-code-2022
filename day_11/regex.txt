@@ -1,0 +1,6 @@
+Monkey ([0-9]+):
+  Starting items: (([0-9]+(,\ )?)+)
+  Operation: new = old ([+*]) ([0-9]+|old)
+  Test: divisible by ([0-9]+)
+    If true: throw to monkey ([0-9]+)
+    If false: throw to monkey ([0-9]+)
