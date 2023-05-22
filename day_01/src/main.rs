@@ -9,7 +9,7 @@ fn load_input() -> Vec<Result<i32, ParseIntError>> {
     lines.map(|line| line.parse::<i32>()).collect()
 }
 
-fn part_1() {
+fn part_1() -> i32 {
     let values = load_input();
 
     let mut sum: i32 = 0;
@@ -28,7 +28,7 @@ fn part_1() {
         };
     });
 
-    println!("{:?}", max);
+    max
 }
 
 fn update_max(max: &mut [i32; 3], value: &i32) {
@@ -41,7 +41,7 @@ fn update_max(max: &mut [i32; 3], value: &i32) {
     });
 }
 
-fn part_2() {
+fn part_2() -> i32 {
     let values = load_input();
 
     let mut sum: i32 = 0;
@@ -55,11 +55,7 @@ fn part_2() {
         }
     });
 
-    println!(
-        "{} = {}",
-        max.map(|num| num.to_string()).join(" + "),
-        max.iter().sum::<i32>()
-    );
+    max.iter().sum::<i32>()
 }
 
 fn scratch() {
@@ -81,4 +77,19 @@ fn main() {
     part_2();
     println!("---");
     scratch();
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{part_1, part_2};
+
+    #[test]
+    fn day_01_part_1() {
+        assert_eq!(part_1(), 72240);
+    }
+
+    #[test]
+    fn day_01_part_2() {
+        assert_eq!(part_2(), 210957);
+    }
 }
