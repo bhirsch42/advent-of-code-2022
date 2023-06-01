@@ -1,8 +1,10 @@
+use crate::utils::grid::{Grid, Position};
 use anyhow::{anyhow, Result};
-use std::collections::BinaryHeap;
-use std::fs::read_to_string;
+use std::fmt::Debug;
 
-#[derive(Debug)]
+use crate::utils::read_input_lines;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct Elevation(u16);
 
 const START_CHAR: char = 'S';
@@ -46,61 +48,69 @@ impl TryFrom<&char> for Elevation {
     }
 }
 
-fn get_position_of_char(file: &str, target_char: &char) -> Option<Position> {
-    let lines = file.split('\n');
+impl Debug for Grid<Elevation> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let rows: Vec<String> = self
+            .rows()
+            .iter()
+            .map(|row| {
+                let nums: Vec<String> = row.iter().map(|&item| format!("{:0>2}", item.0)).collect();
+                nums.join(" ")
+            })
+            .collect();
 
-    for (row, line) in lines.enumerate() {
-        for (col, char) in line.chars().enumerate() {
-            if char == *target_char {
-                return Some(Position { row, col });
-            }
-        }
+        let rows = rows.join("\n");
+        writeln!(f, "Width: {:?}", self.width)?;
+        writeln!(f, "Height: {:?}", self.height)?;
+        writeln!(f, "{rows}")
     }
-
-    None
-}
-
-#[derive(Debug)]
-struct Position {
-    row: usize,
-    col: usize,
 }
 
 #[derive(Debug)]
 struct Heightmap {
-    elevations: Vec<Vec<Elevation>>,
+    elevations: Grid<Elevation>,
     start: Position,
     end: Position,
 }
 
 fn load_heightmap() -> Result<Heightmap> {
-    let file = read_to_string("input.txt").unwrap();
-    let lines = file.split('\n');
+    let lines = read_input_lines("day_12");
+    let width = lines.first().unwrap().len();
+    let chars: Vec<char> = lines.concat().chars().collect();
 
-    let rows: Result<Vec<Vec<Elevation>>> = lines
-        .map(|line| {
-            line.chars()
-                .map(|char| Elevation::try_from(&char))
-                .collect()
-        })
-        .collect();
+    let elevations: Vec<Elevation> = chars
+        .iter()
+        .map(|&char| Elevation::try_from(&char))
+        .collect::<Result<Vec<Elevation>>>()?;
 
-    let start_position = get_position_of_char(&file, &START_CHAR)
+    let char_grid = Grid::new(chars, width);
+
+    let elevation_grid = Grid::new(elevations, width);
+
+    let start_position = char_grid
+        .find(&START_CHAR)
         .ok_or_else(|| anyhow!("Couldn't find start position"))?;
 
-    let end_position = get_position_of_char(&file, &END_CHAR)
+    let end_position = char_grid
+        .find(&END_CHAR)
         .ok_or_else(|| anyhow!("Couldn't find end position"))?;
 
     Ok(Heightmap {
-        elevations: rows?,
+        elevations: elevation_grid,
         start: start_position,
         end: end_position,
     })
 }
 
-fn main() -> Result<()> {
-    let heightmap = load_heightmap()?;
-    println!("{heightmap:?}");
+impl Heightmap {
+    fn dist_bfs(&self) -> i32 {
+        0
+    }
+}
 
+pub fn day_12() -> Result<()> {
+    let heightmap = load_heightmap()?;
+    let dist = heightmap.dist_bfs();
+    println!("{dist:?}");
     Ok(())
 }
