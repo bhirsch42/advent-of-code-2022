@@ -1,6 +1,9 @@
 use crate::utils::grid::{Grid, Position};
 use anyhow::{anyhow, Result};
-use std::fmt::Debug;
+use std::{
+    collections::{BinaryHeap, HashMap},
+    fmt::Debug,
+};
 
 use crate::utils::read_input_lines;
 
@@ -102,15 +105,102 @@ fn load_heightmap() -> Result<Heightmap> {
     })
 }
 
+#[derive(Debug)]
+struct HeightmapPath {
+    pub position: Position,
+    pub dist: i32,
+}
+
+impl Ord for HeightmapPath {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.dist.cmp(&self.dist)
+    }
+}
+
+impl PartialOrd for HeightmapPath {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        other.dist.partial_cmp(&self.dist)
+    }
+}
+
+impl PartialEq for HeightmapPath {
+    fn eq(&self, other: &Self) -> bool {
+        self.dist == other.dist
+    }
+}
+
+impl Eq for HeightmapPath {}
+
 impl Heightmap {
-    fn dist_bfs(&self) -> i32 {
-        0
+    fn dist_bfs(&self, start: &Position, end: &Position) -> Option<i32> {
+        let mut visited: HashMap<Position, bool> = HashMap::new();
+        let mut paths: BinaryHeap<HeightmapPath> = BinaryHeap::new();
+
+        paths.push(HeightmapPath {
+            position: *start,
+            dist: 0,
+        });
+
+        while let Some(heightmap_path) = paths.pop() {
+            let current_position = heightmap_path.position;
+
+            let current_elevation = self.elevations.get(&current_position).unwrap();
+
+            for neighbor in self.elevations.neighbors(&current_position) {
+                let has_visited = visited.get(&neighbor.position).map_or(false, |_| true);
+                let is_accessible = current_elevation.0 + 1 >= neighbor.item.0;
+
+                if !has_visited && is_accessible {
+                    let dist = heightmap_path.dist + 1;
+
+                    if neighbor.position == *end {
+                        return Some(dist);
+                    }
+
+                    visited.insert(neighbor.position, true);
+
+                    paths.push(HeightmapPath {
+                        position: neighbor.position,
+                        dist,
+                    });
+                }
+            }
+        }
+
+        None
     }
 }
 
 pub fn day_12() -> Result<()> {
     let heightmap = load_heightmap()?;
-    let dist = heightmap.dist_bfs();
+    let dist = heightmap.dist_bfs(&heightmap.start, &heightmap.end);
     println!("{dist:?}");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Ok;
+    use rayon::prelude::*;
+
+    #[test]
+    fn part_1() -> Result<()> {
+        let heightmap = load_heightmap()?;
+        let dist = heightmap.dist_bfs(&heightmap.start, &heightmap.end);
+        assert_eq!(dist, Some(420));
+        Ok(())
+    }
+
+    #[test]
+    fn part_2() -> Result<()> {
+        let heightmap = load_heightmap()?;
+        let possible_starts = heightmap.elevations.find_all(&Elevation(1));
+        let dist = possible_starts
+            .par_iter()
+            .filter_map(|start| heightmap.dist_bfs(start, &heightmap.end))
+            .min();
+        assert_eq!(dist, Some(414));
+        Ok(())
+    }
 }

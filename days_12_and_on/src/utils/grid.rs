@@ -1,17 +1,28 @@
-use std::{fmt::Debug, vec};
+use std::fmt::Debug;
+
+const NEIGHBOR_OFFSETS: [[i32; 2]; 4] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
 pub struct Grid<T>
 where
-    T: Clone + PartialEq,
+    T: PartialEq,
 {
-    pub elements: Vec<T>,
+    pub items: Vec<T>,
     pub width: usize,
     pub height: usize,
 }
 
+#[derive(Debug)]
+pub struct GridItem<T>
+where
+    T: PartialEq,
+{
+    pub item: T,
+    pub position: Position,
+}
+
 impl<T> Grid<T>
 where
-    T: Clone + PartialEq,
+    T: PartialEq,
 {
     pub fn new(elements: Vec<T>, width: usize) -> Self {
         if elements.len() % width != 0 {
@@ -20,32 +31,32 @@ where
         let height = elements.len() / width;
 
         Self {
-            elements,
+            items: elements,
             width,
             height,
         }
     }
 
-    pub fn rows(&self) -> Vec<Vec<T>> {
-        self.elements.chunks(self.width).map(Vec::from).collect()
+    pub fn rows(&self) -> Vec<&[T]> {
+        self.items.chunks(self.width).collect()
     }
 
-    pub fn columns(&self) -> Vec<Vec<T>> {
+    pub fn columns(&self) -> Vec<Vec<&T>> {
         (0..self.width)
             .map(|row| {
                 (0..self.height)
-                    .map(|column| self.elements[row + column * self.width].clone())
+                    .map(|column| &self.items[row + column * self.width])
                     .collect()
             })
             .collect()
     }
 
-    pub fn get(&self, row: usize, col: usize) -> Option<&T> {
-        if row >= self.height || col >= self.width {
+    pub fn get(&self, position: &Position) -> Option<&T> {
+        if position.row >= self.height || position.col >= self.width {
             return None;
         }
 
-        Some(&self.elements[row * self.width + col])
+        Some(&self.items[position.row * self.width + position.col])
     }
 
     pub fn find(&self, target: &T) -> Option<Position> {
@@ -60,26 +71,37 @@ where
         None
     }
 
-    pub fn neighbors(&self, target: &Position) -> Vec<&T> {
-        let mut arr: Vec<&T> = vec![];
+    pub fn find_all(&self, target: &T) -> Vec<Position> {
+        let mut results: Vec<Position> = vec![];
 
-        if let Some(item) = self.get(target.row + 1, target.col) {
-            arr.push(item);
+        for (i, row) in self.rows().into_iter().enumerate() {
+            for (j, item) in row.iter().enumerate() {
+                if target == item {
+                    results.push(Position { row: i, col: j });
+                }
+            }
         }
 
-        if let Some(item) = self.get(target.row, target.col + 1) {
-            arr.push(item);
-        }
+        results
+    }
 
-        if let Some(item) = self.get(target.row - 1, target.col) {
-            arr.push(item);
-        }
+    pub fn neighbors(&self, target: &Position) -> Vec<GridItem<&T>> {
+        NEIGHBOR_OFFSETS
+            .iter()
+            .filter_map(|offset| {
+                let row: Option<usize> = ((target.row as i32) + offset[0]).try_into().ok();
+                let col: Option<usize> = ((target.col as i32) + offset[1]).try_into().ok();
 
-        if let Some(item) = self.get(target.row, target.col - 1) {
-            arr.push(item);
-        }
+                if let (Some(row), Some(col)) = (row, col) {
+                    let position = Position { row, col };
+                    if let Some(item) = self.get(&position) {
+                        return Some(GridItem { item, position });
+                    }
+                }
 
-        arr
+                None
+            })
+            .collect()
     }
 }
 
@@ -98,8 +120,17 @@ impl Debug for Grid<bool> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Position {
     pub row: usize,
     pub col: usize,
+}
+
+impl From<(usize, usize)> for Position {
+    fn from(value: (usize, usize)) -> Self {
+        Position {
+            row: value.0,
+            col: value.1,
+        }
+    }
 }
