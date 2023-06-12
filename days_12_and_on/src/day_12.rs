@@ -63,8 +63,8 @@ impl Debug for Grid<Elevation> {
             .collect();
 
         let rows = rows.join("\n");
-        writeln!(f, "Width: {:?}", self.width)?;
-        writeln!(f, "Height: {:?}", self.height)?;
+        writeln!(f, "Width: {:?}", self.width())?;
+        writeln!(f, "Height: {:?}", self.height())?;
         writeln!(f, "{rows}")
     }
 }

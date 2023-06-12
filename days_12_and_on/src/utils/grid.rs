@@ -1,4 +1,7 @@
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    ops::{Index, IndexMut},
+};
 
 const NEIGHBOR_OFFSETS: [[i32; 2]; 4] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
@@ -6,9 +9,8 @@ pub struct Grid<T>
 where
     T: PartialEq,
 {
-    pub items: Vec<T>,
-    pub width: usize,
-    pub height: usize,
+    items: Vec<T>,
+    width: usize,
 }
 
 #[derive(Debug)]
@@ -33,18 +35,36 @@ where
         Self {
             items: elements,
             width,
-            height,
         }
+    }
+
+    pub fn height(&self) -> usize {
+        self.items.len() / self.width
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn create_and_fill(height: usize, width: usize, fill: T) -> Self
+    where
+        T: Clone,
+    {
+        Self::new(vec![fill; width * height], width)
     }
 
     pub fn rows(&self) -> Vec<&[T]> {
         self.items.chunks(self.width).collect()
     }
 
+    pub fn rows_mut(&mut self) -> Vec<&mut [T]> {
+        self.items.chunks_mut(self.width).collect()
+    }
+
     pub fn columns(&self) -> Vec<Vec<&T>> {
         (0..self.width)
             .map(|row| {
-                (0..self.height)
+                (0..self.height())
                     .map(|column| &self.items[row + column * self.width])
                     .collect()
             })
@@ -52,7 +72,7 @@ where
     }
 
     pub fn get(&self, position: &Position) -> Option<&T> {
-        if position.row >= self.height || position.col >= self.width {
+        if position.row >= self.height() || position.col >= self.width {
             return None;
         }
 
@@ -103,6 +123,13 @@ where
             })
             .collect()
     }
+
+    pub fn add_row(&mut self, fill: T)
+    where
+        T: Copy,
+    {
+        self.items.append(&mut vec![fill; self.width]);
+    }
 }
 
 impl Debug for Grid<bool> {
@@ -115,7 +142,7 @@ impl Debug for Grid<bool> {
 
         let rows = rows.join("\n");
         writeln!(f, "Width: {:?}", self.width)?;
-        writeln!(f, "Height: {:?}", self.height)?;
+        writeln!(f, "Height: {:?}", self.height())?;
         write!(f, "{rows}")
     }
 }
@@ -132,5 +159,40 @@ impl From<(usize, usize)> for Position {
             row: value.0,
             col: value.1,
         }
+    }
+}
+
+impl<T> Index<usize> for Grid<T>
+where
+    T: PartialEq,
+{
+    type Output = [T];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.rows()[index]
+    }
+}
+
+impl<T> IndexMut<usize> for Grid<T>
+where
+    T: PartialEq,
+{
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let start = index * self.width;
+        let end = start + self.width;
+        &mut self.items[start..end]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Grid;
+
+    #[test]
+    fn index() {
+        let grid = Grid::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
+        let left = &grid[1];
+        let right = vec![4, 5, 6];
+        assert_eq!(left, right);
     }
 }
